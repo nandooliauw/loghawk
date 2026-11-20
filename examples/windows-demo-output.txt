@@ -1,0 +1,41 @@
+loghawk  2026-11-20 03:19:27 UTC
+source    windows-security.csv  (windows_csv, 10 events parsed)
+params    window=300s  threshold=5  parse errors=0
+
+findings 4   1 critical  2 high  0 medium  1 low
+
+CRITICAL Successful login after repeated failures  [R-02/203.0.113.99/032341]
+         203.0.113.99 failed 6 time(s) and then authenticated as 'administrator' — treat as a probable compromise until disproven
+         first 2026-11-20 03:21:05  last 03:23:41  events 7
+           L2    03:21:05  failed       administrator  203.0.113.99     bad username or password (logon type 3)
+           L3    03:21:22  failed       administrator  203.0.113.99     bad username or password (logon type 3)
+           L4    03:21:39  failed       administrator  203.0.113.99     valid username, bad password (logon type 3)
+           L5    03:21:58  failed       administrator  203.0.113.99     valid username, bad password (logon type 3)
+           L6    03:22:31  failed       administrator  203.0.113.99     bad username or password (logon type 3)
+           L7    03:22:54  failed       administrator  203.0.113.99     bad username or password (logon type 3)
+           L8    03:23:41  accepted     administrator  203.0.113.99     Event 4624 (logon type 3)
+         fix: Confirm the session with the account owner, terminate it, rotate the credential, review what the account touched after login, and check for persistence (authorized_keys, cron, systemd units).
+
+HIGH     Brute force authentication  [R-01/203.0.113.99]
+         6 failed authentications from 203.0.113.99 within 300s against 1 account(s): administrator
+         first 2026-11-20 03:21:05  last 03:22:54  events 6
+           L2    03:21:05  failed       administrator  203.0.113.99     bad username or password (logon type 3)
+           L3    03:21:22  failed       administrator  203.0.113.99     bad username or password (logon type 3)
+           L4    03:21:39  failed       administrator  203.0.113.99     valid username, bad password (logon type 3)
+           L5    03:21:58  failed       administrator  203.0.113.99     valid username, bad password (logon type 3)
+           L6    03:22:31  failed       administrator  203.0.113.99     bad username or password (logon type 3)
+           L7    03:22:54  failed       administrator  203.0.113.99     bad username or password (logon type 3)
+         fix: Block the source at the firewall, and remove password-only access where you can: keys for SSH, MFA for RDP/VPN. Add rate limiting (fail2ban, sshd MaxAuthTries, account lockout policy) and confirm none of the targeted accounts uses a weak password.
+
+HIGH     Direct privileged account login  [R-05/administrator]
+         1 successful login(s) as 'administrator' from 203.0.113.99
+         first 2026-11-20 03:23:41  last 03:23:41  events 1
+           L8    03:23:41  accepted     administrator  203.0.113.99     Event 4624 (logon type 3)
+         fix: Forbid direct root/Administrator login: require a named account and escalate with sudo. Where it cannot be removed, restrict the source address and require a key or MFA.
+
+LOW      Login outside working hours  [R-07]
+         1 successful login(s) between 18:00 and 08:00
+         first 2026-11-20 03:23:41  last 03:23:41  events 1
+           L8    03:23:41  accepted     administrator  203.0.113.99     Event 4624 (logon type 3)
+         fix: Confirm with the account owner. If legitimate, record the on-call rota; if not, treat it as the first indicator of stolen credentials.
+

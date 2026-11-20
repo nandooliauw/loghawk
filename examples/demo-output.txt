@@ -1,0 +1,75 @@
+loghawk  2026-11-20 03:19:27 UTC
+source    auth.log  (authlog, 35 events parsed)
+params    window=300s  threshold=5  parse errors=0
+
+findings 7   1 critical  3 high  2 medium  1 low
+
+CRITICAL Successful login after repeated failures  [R-02/203.0.113.45/031802]
+         203.0.113.45 failed 8 time(s) and then authenticated as 'deploy' — treat as a probable compromise until disproven
+         first 2026-11-20 03:12:04  last 03:18:02  events 9
+           L1    03:12:04  failed       deploy         203.0.113.45     Failed password for deploy
+           L2    03:12:19  failed       deploy         203.0.113.45     Failed password for deploy
+           L3    03:12:41  failed       deploy         203.0.113.45     Failed password for deploy
+           L4    03:13:07  failed       deploy         203.0.113.45     Failed password for deploy
+           L7    03:14:38  failed       deploy         203.0.113.45     Failed password for deploy
+           L8    03:16:11  failed       deploy         203.0.113.45     Failed password for deploy
+           L9    03:17:59  failed       deploy         203.0.113.45     Failed password for deploy
+           L10   03:18:02  accepted     deploy         203.0.113.45     Accepted password for deploy
+           … 1 more event(s) not shown (evidence capped)
+         fix: Confirm the session with the account owner, terminate it, rotate the credential, review what the account touched after login, and check for persistence (authorized_keys, cron, systemd units).
+
+HIGH     Brute force authentication  [R-01/203.0.113.45]
+         7 failed authentications from 203.0.113.45 within 300s against 1 account(s): deploy
+         first 2026-11-20 03:12:04  last 03:16:11  events 7
+           L1    03:12:04  failed       deploy         203.0.113.45     Failed password for deploy
+           L2    03:12:19  failed       deploy         203.0.113.45     Failed password for deploy
+           L3    03:12:41  failed       deploy         203.0.113.45     Failed password for deploy
+           L4    03:13:07  failed       deploy         203.0.113.45     Failed password for deploy
+           L5    03:13:52  failed       deploy         203.0.113.45     Failed password for deploy
+           L7    03:14:38  failed       deploy         203.0.113.45     Failed password for deploy
+           L8    03:16:11  failed       deploy         203.0.113.45     Failed password for deploy
+         fix: Block the source at the firewall, and remove password-only access where you can: keys for SSH, MFA for RDP/VPN. Add rate limiting (fail2ban, sshd MaxAuthTries, account lockout policy) and confirm none of the targeted accounts uses a weak password.
+
+HIGH     Distributed password spray  [R-04/admin]
+         'admin' was attacked from 5 different addresses within 300s — the pattern of a spray, which defeats per-IP lockout
+         first 2026-11-20 03:30:01  last 03:30:49  events 5
+           L23   03:30:01  failed       admin          192.0.2.101      Failed password for admin
+           L24   03:30:12  failed       admin          192.0.2.102      Failed password for admin
+           L25   03:30:24  failed       admin          192.0.2.103      Failed password for admin
+           L26   03:30:37  failed       admin          192.0.2.104      Failed password for admin
+           L27   03:30:49  failed       admin          192.0.2.105      Failed password for admin
+         fix: Lock or rename the targeted account if it exists, enforce MFA, and add per-account rate limiting rather than per-IP only.
+
+HIGH     Direct privileged account login  [R-05/root]
+         1 successful login(s) as 'root' from 192.0.2.77
+         first 2026-11-20 03:14:22  last 03:14:22  events 1
+           L6    03:14:22  accepted     root           192.0.2.77       Accepted password for root
+         fix: Forbid direct root/Administrator login: require a named account and escalate with sudo. Where it cannot be removed, restrict the source address and require a key or MFA.
+
+MEDIUM   Username enumeration  [R-03/198.51.100.23]
+         198.51.100.23 tried 11 distinct usernames within 300s (backup, ftpuser, git, jenkins, nagios, oracle…)
+         first 2026-11-20 03:20:03  last 03:20:28  events 12
+           L11   03:20:03  invalid_user test           198.51.100.23    Invalid user test
+           L12   03:20:04  invalid_user oracle         198.51.100.23    Invalid user oracle
+           L13   03:20:05  invalid_user postgres       198.51.100.23    Invalid user postgres
+           L14   03:20:07  invalid_user ubuntu         198.51.100.23    Invalid user ubuntu
+           L19   03:20:19  invalid_user nagios         198.51.100.23    Invalid user nagios
+           L20   03:20:22  invalid_user backup         198.51.100.23    Invalid user backup
+           L21   03:20:25  invalid_user svn            198.51.100.23    Invalid user svn
+           L22   03:20:28  failed       svn            198.51.100.23    Failed password for svn
+           … 4 more event(s) not shown (evidence capped)
+         fix: Block the source, and reduce the signal an attacker gets: sshd should not reveal which accounts exist (consistent failure messages, no Invalid user lines leaking to the client).
+
+MEDIUM   Privilege escalation via sudo  [R-06]
+         1 sudo command(s) that open a root shell or touch credentials (bob)
+         first 2026-11-20 14:05:12  last 14:05:12  events 1
+           L33   14:05:12  sudo         bob            -                sudo as root: /bin/bash
+         fix: Confirm each escalation was change-managed. Prefer specific sudo commands over a blanket /bin/bash, and log sudo to a remote collector so this is reviewable after the fact.
+
+LOW      Login outside working hours  [R-07]
+         2 successful login(s) between 18:00 and 08:00
+         first 2026-11-20 03:14:22  last 03:18:02  events 2
+           L6    03:14:22  accepted     root           192.0.2.77       Accepted password for root
+           L10   03:18:02  accepted     deploy         203.0.113.45     Accepted password for deploy
+         fix: Confirm with the account owner. If legitimate, record the on-call rota; if not, treat it as the first indicator of stolen credentials.
+

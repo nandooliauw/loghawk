@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Tool output
+reports/
+*.log
+
+# Real log data must never be committed
+*.csv
+*.log
+!samples/auth.log
+!samples/windows-security.csv
+!examples/*.txt
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
