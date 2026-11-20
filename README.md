@@ -236,6 +236,6 @@ MIT — see [LICENSE](LICENSE).
 
 ---
 
-Built by Fernando Iskandar. Rule shapes follow common SOC detection patterns;
+Built by Fernando. Rule shapes follow common SOC detection patterns;
 the thresholds and the lookback split are my own and documented above so they
 can be argued with.
